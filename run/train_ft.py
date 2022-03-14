@@ -7,6 +7,7 @@ import copy
 import torch
 import numpy as np
 import time
+# 从options库中引入训练配置库
 from options import TrainOptions
 from data import create_data_loader, create_dataset
 from models import create_model
@@ -27,8 +28,9 @@ from tqdm import tqdm
 # from pcdet.ops.pointnet2.pointnet2_stack import pointnet2_utils as pointnet2_stack_utils
 import gc
 
+# 这个mesh是用来做什么？
 def mse2psnr(x): return -10.* torch.log(x)/np.log(10.)
-
+# 存储图片
 def save_image(img_array, filepath):
     assert len(img_array.shape) == 2 or (len(img_array.shape) == 3
                                          and img_array.shape[2] in [3, 4])
@@ -38,7 +40,7 @@ def save_image(img_array, filepath):
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
     Image.fromarray(img_array).save(filepath)
 
-
+# 附近的视角
 def nearest_view(campos, raydir, xyz, id_list):
     cam_ind = torch.zeros([0,1], device=campos.device, dtype=torch.long)
     step=10000
@@ -70,12 +72,15 @@ def gen_points_filter_embeddings(dataset, visualizer, opt):
     gpu_filter = True
     cpu2gpu= len(dataset.view_id_list) > 300
 
+    # 这里是什么意思？
     imgs_lst, HDWD_lst, c2ws_lst, w2cs_lst, intrinsics_lst = [],[],[],[],[]
+    # 这里是反向传播的过程中梯度不被记录
     with torch.no_grad():
         for i in tqdm(range(0, len(dataset.view_id_list))):
             data = dataset.get_init_item(i)
             model.set_input(data)
             # intrinsics    1, 3, 3, 3
+            # Model 生成neural points 点
             points_xyz_lst, photometric_confidence_lst, point_mask_lst, intrinsics_lst, extrinsics_lst, HDWD, c2ws, w2cs, intrinsics, near_fars  = model.gen_points()
             # visualizer.save_neural_points(i, points_xyz_lst[0], None, data, save_ref=opt.load_points == 0)
             B, N, C, H, W, _ = points_xyz_lst[0].shape
@@ -578,10 +583,14 @@ def create_all_bg(dataset, model, img_lst, c2ws_lst, w2cs_lst, intrinsics_all, H
     dataset.opt.random_sample = random_sample
     return bg_ray_lst
 
+# 这里是训练函数的入口
 def main():
+    # 让程序在开始时自动搜索出最适合它的卷积算法，实现对网络的加速
+    # 一般这种适用于网络结构固定不变，输入形状不变的情况
     torch.backends.cudnn.benchmark = True
-
+    # 训练时候的配置
     opt = TrainOptions().parse()
+    # 训练用了哪些GPU
     cur_device = torch.device('cuda:{}'.format(opt.gpu_ids[0]) if opt.
                               gpu_ids else torch.device('cpu'))
     print("opt.color_loss_items ", opt.color_loss_items)
@@ -594,14 +603,18 @@ def main():
         print(
             '++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++' +
             fmt.END)
+    # 这里配置来创建可视化
     visualizer = Visualizer(opt)
+    # 依据配置使用对应的训练数据集.
     train_dataset = create_dataset(opt)
     normRw2c = train_dataset.norm_w2c[:3,:3] # torch.eye(3, device="cuda") #
     img_lst=None
     best_PSNR=0.0
     best_iter=0
     points_xyz_all=None
+    # 这里的部分不会被track梯度
     with torch.no_grad():
+
         print(opt.checkpoints_dir + opt.name + "/*_net_ray_marching.pth")
         if len([n for n in glob.glob(opt.checkpoints_dir + opt.name + "/*_net_ray_marching.pth") if os.path.isfile(n)]) > 0:
             if opt.bgmodel.endswith("plane"):

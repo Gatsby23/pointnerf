@@ -25,9 +25,10 @@ from PIL import Image
 from tqdm import tqdm
 
 
-
+# 这里不知道是做什么
 def mse2psnr(x): return -10.* torch.log(x)/np.log(10.)
 
+# 这里是存储图像
 def save_image(img_array, filepath):
     assert len(img_array.shape) == 2 or (len(img_array.shape) == 3
                                          and img_array.shape[2] in [3, 4])
@@ -40,13 +41,14 @@ def save_image(img_array, filepath):
 
 
 
+# 对什么Mask呢？
 def masking(mask, firstdim_lst, seconddim_lst):
     first_lst = [item[mask, ...] if item is not None else None for item in firstdim_lst]
     second_lst = [item[:, mask, ...] if item is not None else None for item in seconddim_lst]
     return first_lst, second_lst
 
 
-
+# 渲染模型
 def render(model, dataset, visualizer, opt, gen_vid=False):
     print('-----------------------------------Testing-----------------------------------')
     model.eval()

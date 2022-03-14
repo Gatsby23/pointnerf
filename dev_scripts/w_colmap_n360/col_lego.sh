@@ -1,4 +1,5 @@
 #!/bin/bash
+# Check Point是什么后面要弄清楚
 nrCheckpoint="../checkpoints"
 nrDataRoot="../data_src"
 name='lego'
@@ -58,7 +59,7 @@ SR=80
 K=8
 P=13 #120
 NN=2
-
+# 激活函数是LeakReLu
 act_type="LeakyReLU"
 
 agg_intrp_order=2
@@ -158,6 +159,7 @@ cd run
 for i in $(seq 1 $prob_freq $maximum_step)
 
 do
+# 这里开始训练特征
 python3 train_ft.py \
        --name $name \
         --scan $scan \
